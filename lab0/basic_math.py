@@ -7,8 +7,21 @@ def matrix_multiplication(matrix_a, matrix_b):
     Задание 1. Функция для перемножения матриц с помощью списков и циклов.
     Вернуть нужно матрицу в формате списка.
     """
-    # put your code here
-    pass
+    if (matrix_a.ndim != 2 and matrix_b.ndim != 2):
+        raise ValueError("Аргументы должны быть двумерными матрицами")
+
+    if (matrix_a.shape[1] != matrix_b.shape[0]):
+        raise ValueError("Размеры матриц не позволяют перемножить")
+
+    m, common, n = *matrix_a.shape, matrix_b.shape[1]
+    res = np.zeros((m, n), dtype=np.int16)
+
+    for i in range(m):
+        for j in range(n):
+            for k in range(common):
+                res[i, j] += matrix_a[i, k] * matrix_b[k, j]
+
+    return res
 
 
 def functions(a_1, a_2):
