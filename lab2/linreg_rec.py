@@ -5,6 +5,7 @@ import pandas as pd
 import sklearn
 
 from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import mean_absolute_error
@@ -12,7 +13,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 nltk.download("stopwords")
-nltk.download("punkt")
+nltk.download('punkt_tab')
 
 
 def books_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
@@ -50,6 +51,7 @@ def ratings_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     return ratingDf.reset_index(drop=True)
 
 
+STOPWORDS = set(stopwords.words("english"))
 def title_preprocessing(text: str) -> str:
     """Функция для нормализации текстовых данных в стобце Book-Title:
     - токенизация
@@ -58,7 +60,10 @@ def title_preprocessing(text: str) -> str:
     Опционально можно убрать шаги или добавить дополнительные.
     """
 
-    pass
+    tokens = [token.lower() for token in word_tokenize(text)]
+    tokens_no_punkt = [token for token in tokens if str.isalpha(token)]
+    tokens_no_punkt_no_stopwords = [token for token in tokens_no_punkt if token not in STOPWORDS]
+    return ' '.join(tokens_no_punkt_no_stopwords)
 
 
 def modeling(books: pd.DataFrame, ratings: pd.DataFrame) -> None:
