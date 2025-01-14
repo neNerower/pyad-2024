@@ -29,8 +29,19 @@ def modeling(ratings: pd.DataFrame) -> None:
     3. Подобрать гиперпараметры (при необходимости)
     4. Сохранить модель"""
 
-    # ...
+    cleared_ratings = ratings_preprocessing(ratings)
+
+    reader = Reader(rating_scale=(1, 10))
+    data = Dataset.load_from_df(cleared_ratings, reader)
+
+    trainset, testset = train_test_split(data, test_size=0.25)
+
     svd = SVD()
-    # ...
+    
+    svd.fit(trainset)
+    predictions = svd.test(testset)
+
+    acc = accuracy.mse(predictions)
+
     with open("svd.pkl", "wb") as file:
         pickle.dump(svd, file)
