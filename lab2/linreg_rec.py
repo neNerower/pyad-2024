@@ -18,7 +18,17 @@ nltk.download("punkt")
 def books_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     """Функция для предобработки таблицы Books.scv"""
 
-    pass
+    # Drop image links
+    bookDf = df.drop(df.columns[-3:], axis=1)
+
+    # Drop books from future
+    bookDf['Year-Of-Publication'] = pd.to_numeric(bookDf['Year-Of-Publication'], errors='coerce')
+    bookDf = bookDf[bookDf['Year-Of-Publication'] <= 2016]
+    
+    # Drop incomplete data
+    bookDf = bookDf.dropna()
+
+    return bookDf.reset_index(drop=True)
 
 
 def ratings_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
@@ -28,7 +38,16 @@ def ratings_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     1. Замену оценки книги пользователем на среднюю оценку книги всеми пользователями.
     2. Расчет числа оценок для каждой книги (опционально)."""
 
-    pass
+    # Drop 0 ratings
+    ratingDf = df[df['Book-Rating'] <= 0]
+
+    # Drop unpopular books (with ratings amount < 1)
+    ratingDf = ratingDf.groupby('ISBN').filter(lambda x: len(x) > 1)
+
+    # Drop inactive users
+    ratingDf = ratingDf.groupby('User-ID').filter(lambda x: len(x) > 1)
+
+    return ratingDf.reset_index(drop=True)
 
 
 def title_preprocessing(text: str) -> str:
