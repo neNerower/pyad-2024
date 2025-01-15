@@ -10,7 +10,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
 nltk.download("stopwords")
 nltk.download('punkt_tab')
@@ -40,7 +43,7 @@ def ratings_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     2. Расчет числа оценок для каждой книги (опционально)."""
 
     # Drop 0 ratings
-    ratingDf = df[df['Book-Rating'] <= 0]
+    ratingDf = df[df['Book-Rating'] > 0]
 
     # Drop unpopular books (with ratings amount < 1)
     ratingDf = ratingDf.groupby('ISBN').filter(lambda x: len(x) > 1)
@@ -76,8 +79,40 @@ def modeling(books: pd.DataFrame, ratings: pd.DataFrame) -> None:
     6. Подобрать гиперпараметры (при необходимости)
     7. Сохранить модель"""
 
-    # ...
-    linreg = SGDRegressor()
-    # ...
+    # Clear data
+    cleared_books = books_preprocessing(books)
+    cleared_books["Book-Title"] = cleared_books["Book-Title"].apply(title_preprocessing)
+    cleared_ratings = ratings_preprocessing(ratings)
+
+    # Compute avg book ratings
+    avg_book_ratings = cleared_ratings.groupby('ISBN').agg({'Book-Rating': 'mean'})
+    rated_books = pd.merge(cleared_books, avg_book_ratings, on='ISBN', how='inner')
+    
+    X = rated_books[["Book-Title", "Book-Author", "Publisher", "Year-Of-Publication"]]
+    Y = rated_books["Book-Rating"]
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25)
+
+    # Prepare pipeline
+    preprocessor = ColumnTransformer(
+        transformers = [
+            ('tf-idf', TfidfVectorizer(), 'Book-Title'),
+            ('numbers', StandardScaler(), ['Year-Of-Publication']),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'), ['Publisher', 'Book-Author']),
+        ]
+    )
+
+    reg = Pipeline([
+        ('preprocessor', preprocessor),
+        ('regressor', SGDRegressor(max_iter=1000, tol=1e-3))
+    ])
+
+    # Train and test model
+    reg.fit(X_train, y_train)
+
+    prediction = reg.predict(X_test)
+    mae = mean_absolute_error(y_test, prediction)
+    print(f"MAE: {mae}")
+
+    # Save model
     with open("linreg.pkl", "wb") as file:
-        pickle.dump(linreg, file)
+        pickle.dump(reg, file)
