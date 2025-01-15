@@ -11,7 +11,7 @@ def ratings_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     """Функция для предобработки таблицы Ratings.scv"""
 
     # Drop 0 ratings
-    ratingDf = df[df['Book-Rating'] <= 0]
+    ratingDf = df[df['Book-Rating'] > 0]
 
     # Drop unpopular books (with ratings amount < 1)
     ratingDf = ratingDf.groupby('ISBN').filter(lambda x: len(x) > 1)
@@ -41,7 +41,7 @@ def modeling(ratings: pd.DataFrame) -> None:
     svd.fit(trainset)
     predictions = svd.test(testset)
 
-    acc = accuracy.mse(predictions)
+    acc = accuracy.mae(predictions)
 
     with open("svd.pkl", "wb") as file:
         pickle.dump(svd, file)
